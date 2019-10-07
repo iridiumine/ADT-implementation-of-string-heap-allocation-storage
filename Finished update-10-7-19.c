@@ -9,105 +9,97 @@
 #define ERROR -1
 #define OVERFLOW -2
 
-#define MAX_STRLEN 256
-
 typedef int Status;
 
-typedef unsigned char *SString;
+typedef struct{
+    char *ch;
+    int length;
+}HString;
 
-SString T, S, Sub, S1, S2;
+HString T, S, Sub, S1, S2;
 
-SString Initialize() {
-    unsigned char* Q = (unsigned char*)malloc(MAX_STRLEN * sizeof(char));
-    return Q;
-}
-
-Status Assign(SString T, char *chars) {
-    if (strlen(chars) > MAX_STRLEN) {
-        return ERROR;
-    }
-    else {
-        int i = 0;
-        
-        while (chars[i] != '\0') {
-            T[i] = chars[i];
-            i++;
-        }
-        T[i] = '\0';
-        
-        return OK;
-    }
-}
-
-Status Clear(SString T) {
-    int i = 0;
+Status Initialize(HString *T) {
+    T->ch = NULL;
+    T->length = 0;
     
-    while (T[i] != '\0') {
-        T[i] = '\0';
-        i++;
+    return OK;
+}
+
+Status Assign(HString *T, char *chars) {
+    int a = (int)strlen(chars);
+    T->length = a;
+    T->ch = (char*)malloc((T->length) * sizeof(HString));
+    
+    int i;
+    for (i = 0; i < a; i++) {
+        T->ch[i] = chars[i];
     }
     
     return OK;
 }
 
-Status Destroy(SString T) {
+Status Clear(HString *T) {
+    if (T->ch) {
+        T->ch = NULL;
+    }
+    T->length = 0;
+    return OK;
+}
+
+Status Destroy(HString *T) {
     Clear(T);
     
     return OK;
 }
 
-int Length(SString T) {
+int Length(HString *T) {
     int i = 0;
     
-    while (T[i] != '\0') {
+    while (T->ch[i] != '\0') {
         i++;
     }
     
     return i;
 }
 
-Status Copy(SString T, SString S) {
+Status Copy(HString *T, HString *S) {
     int a = Length(S);
     
-    if (a > MAX_STRLEN) {
-        return OVERFLOW;
-    }
-    else {
-        Clear(T);
-        for (size_t i = 0; i < a; i++) {
-            T[i] = S[i];
-        }
-        
-        return OK;
-    }
-}
-
-SString Copy_part(SString S, int pos, int len) {
-    Sub = Initialize();
+    Clear(T);
+    T->length = a;
+    T->ch = (char*)malloc((T->length) * sizeof(HString));
     
-    if (pos + len < MAX_STRLEN) {
-        int i, j = pos-1;
-        for (i = 0; i < len; i++) {
-            Sub[i] = S[j];
-            j++;
-        }
-        return Sub;
+    for (size_t i = 0; i < a; i++) {
+        T->ch[i] = S->ch[i];
     }
-    else {
-        return NULL;
-    }
+    
+    return OK;
 }
 
-int Compare(SString T, SString S) {
+Status Copy_part(HString *S, HString *Sub, int pos, int len) {
+    Clear(Sub);
+    Sub->length = len;
+    Sub->ch = (char*)malloc((Sub->length) * sizeof(HString));
+    
+    int i, j = pos-1;
+    for (i = 0; i < len; i++) {
+        Sub->ch[i] = S->ch[j];
+        j++;
+    }
+    
+    return OK;
+}
+
+int Compare(HString *T, HString *S) {
     int a = Length(T);
     int b = Length(S);
     int c = a > b ? a : b;
     
     for (size_t i = 0; i < c; i++) {
-        if (T[i] > S[i]) {
+        if (T->ch[i] > S->ch[i]) {
             return TRUE;
         }
-        else if (T[i] < S[i]) {
+        else if (T->ch[i] < S->ch[i]) {
             return FALSE;
         }
         else {
@@ -117,104 +109,77 @@ int Compare(SString T, SString S) {
     return EQUAL;
 }
 
-Status Insert(SString S, SString T, int pos) {
+Status Insert(HString *S, HString *T, int pos) {
     int a = Length(S);
     int b = Length(T);
+    S->length = a + b;
     
-    if (a + b > MAX_STRLEN-1) {
-        int c = MAX_STRLEN -1 - a;//空出来max-a个长度
-        int i, j = 0;
-        S[MAX_STRLEN-1] = '\0';
-        for (i = MAX_STRLEN-2; i >= pos + c-1; i--) {
-            S[i] = S[i-c];
-        }
-        for (i = pos-1; i < pos + c-1; i++) {
-            S[i] = T[j];
-            j++;
-        }
-        return FALSE;
+    int i, j = 0;
+    S->ch[a+b] = '\0';
+    for (i = a + b-1; i >= pos + b-1; i--) {
+        S->ch[i] = S->ch[i-b];
     }
-    else {
-        int i, j = 0;
-        S[a+b] = '\0';
-        for (i = a + b-1; i >= pos + b-1; i--) {
-            S[i] = S[i-b];
-        }
-        for (i = pos-1; i < pos + b-1; i++) {
-            S[i] = T[j];
-            j++;
-        }
-        return TRUE;
+    
+    for (i = pos-1; i < pos + b-1; i++) {
+        S->ch[i] = T->ch[j];
+        j++;
     }
+    return TRUE;
 }
 
-Status Delete(SString S, int pos, int len) {
+Status Delete(HString *S, int pos, int len) {
     int a = Length(S);
-    if (len + pos > MAX_STRLEN) {
-        int i;
-        for (i = pos-1; i < MAX_STRLEN - 1; i++) {
-            S[i] = '\0';
-        }
-        return ERROR;
+    S->length = a - len;
+    
+    int i;
+    for (i = pos-1; i < a - len; i++) {
+        S->ch[i] = S->ch[i + len];
     }
-    else {
-        int i;
-        for (i = pos-1; i < a - len - 1; i++) {
-            S[i] = S[i + len];
-        }
-        for (i = a - len - 1; i < a; i++) {
-            S[i] = '\0';
-        }
-        return OK;
+    for (i = a - len; i < a; i++) {
+        S->ch[i] = '\0';
     }
+    return OK;
 }
 
-SString SubString(SString T, int pos, int len) {
-    Sub = Initialize();
+Status SubString(HString *T, HString *Sub, int pos, int len) {
+    Clear(Sub);
+    Sub->length = len;
+    Sub->ch = (char*)malloc((Sub->length) * sizeof(HString));
     
-    int a = Length(T);
-    
-    if (pos + len > a) {
-        return NULL;
+    int i, j = 0;
+    for (i = pos-1; i < pos + len - 1; i++) {
+        Sub->ch[j] = T->ch[i];
+        j++;
     }
-    else {
-        int i, j = 0;
-        for (i = pos-1; i < pos + len - 1; i++) {
-            Sub[j] = T[i];
-            j++;
-        }
-        return Sub;
-    }
+    return OK;
 }
 
-SString Concat(SString S1, SString S2) {
+Status Concat(HString *S1, HString *S2, HString *Sub) {
     int a = Length(S1);
     int b = Length(S2);
     
-    if (a + b > MAX_STRLEN) {
-        return NULL;
+    Clear(Sub);
+    Sub->length = a + b;
+    Sub->ch = (char*)malloc((Sub->length) * sizeof(HString));
+    
+    int i, j = 0;
+    for (i = 0; i < a; i++) {
+        Sub->ch[i] = S1->ch[i];
     }
-    else {
-        T = Initialize();
-        int i, j = 0;
-        for (i = 0; i < a; i++) {
-            T[i] = S1[i];
-        }
-        for (i = a; i < a + b; i++) {
-            T[i] = S2[j];
-            j++;
-        }
-        return T;
+    for (i = a; i < a + b; i++) {
+        Sub->ch[i] = S2->ch[j];
+        j++;
     }
+    return OK;
 }
 
-Status Traversal(SString T) {
+Status Traversal(HString *T) {
     int letters[128];
     memset(letters, 0, sizeof(letters));
     int i = 0;
     
-    while (T[i] != '\0') {
-        letters[T[i] - 'A' + 65]++;
+    while (T->ch[i] != '\0') {
+        letters[T->ch[i] - 'A' + 65]++;
         i++;
     }
     
@@ -225,17 +190,20 @@ Status Traversal(SString T) {
     return OK;
 }
 
-int Index(SString S, SString T) {
+int Index(HString *S, HString *T, HString *Sub) {
     int a = Length(S);
     int b = Length(T);
+    
     if (a < b) {
         return ERROR;
     }
     else {
         int i;
         for (i = 1; i < a; i++) {
-            Sub = Initialize();
-            Sub = Copy_part(S, i, b);
+            Clear(Sub);
+            Sub->length = b;
+            Sub->ch = (char*)malloc((Sub->length) * sizeof(HString));
+            Copy_part(S, Sub, i, b);
             if (Compare(Sub, T) == 0) {
                 return i;
             }
@@ -247,13 +215,13 @@ int Index(SString S, SString T) {
     return FALSE;
 }
 
-void Get_next(SString T, int *next) {
+void Get_next(HString *T, int *next) {
     int j = 0, k = -1;
     next[0] = -1;
     
     while(j < Length(T))
     {
-        if(k == -1 || T[j] == T[k])
+        if(k == -1 || T->ch[j] == T->ch[k])
         {
             j++;
             k++;
@@ -266,16 +234,16 @@ void Get_next(SString T, int *next) {
     }
 }
 
-int KMP(SString S, SString T) {
+int KMP(HString *S, HString *T) {
     int i = 0, j = 0;
     int a = Length(S);
     int b = Length(T);
     
-    int next[MAX_STRLEN];
+    int next[b];
     Get_next(T, next);
     
     while (i < a && j < b) {
-        if (j == -1 || S[i] == T[j]) {
+        if (j == -1 || S->ch[i] == T->ch[j]) {
             i++;
             j++;
         }
@@ -291,7 +259,7 @@ int KMP(SString S, SString T) {
     }
 }
 
-Status Replace(SString S, SString T, SString V) {
+Status Replace(HString *S, HString *T, HString *V) {
     while (KMP(S, T) != -1) {
         int a = Length(T);
         int pos = KMP(S, T);
